@@ -25,7 +25,10 @@
 
 #include "xc.h"
 #include "libpic30.h"
-
+static unsigned char snake = 0x01;  
+static char snakeDir = 1;
+static unsigned char queueVal = 0x00;
+static unsigned char lfsr = 0x3B;
 int main(void) {
     unsigned port=0x0001;
     char current6=0;
@@ -84,10 +87,30 @@ int main(void) {
                 }
                 break;
             case 7:
-                
-                
-                
-                
+                if(snakeDir){
+                    snake<<=1;
+                }else{
+                    snake>>=1;
+                }
+                if(snake ==0x04){
+                    snakeDir=0;
+                }else if(snake==0x01){
+                    snakeDir =1;
+                }
+                LATA=snake;
+                break;
+            case 8:
+                LATA= queueVal;
+                queueVal=(queueVal <<1)|0x01;
+                if(queueVal==0xFF){
+                    queueVal=0x00;
+                }
+                break;
+            case 9:
+                unisgned char feedback= ((lfsr >> 0) ^ (lfsr >> 1) ^ (lfsr >> 3) ^ (lfsr >> 4)) & 0x01;
+                lfsr = (lfsr >> 1) | (feedback << 5);
+                LATA = lfsr;
+                break;
         }
         prev6 = PORTDbits.RD6;
         __delay32(150000);
@@ -95,7 +118,7 @@ int main(void) {
         
         if(prev6==1 && current6==0){
             value++;
-            if(value>6){
+            if(value>9){
                 value=1;
             }
             port=1;
